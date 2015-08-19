@@ -1,14 +1,17 @@
-#ifndef PLUGINLIB_TEST_PLUGINS_H_
-#define PLUGINLIB_TEST_PLUGINS_H_
-#include "test_base.h"
+#ifndef __pluginlib__test_plugins__h__
+#define __pluginlib__test_plugins__h__
+
 #include <cmath>
+
+#include "test_base.h"
 
 namespace test_plugins
 {
 class Bar : public test_base::Fubar
 {
 public:
-  Bar(){}
+  Bar()
+  {}
 
   void initialize(double foo)
   {
@@ -32,7 +35,8 @@ private:
 class Foo : public test_base::Fubar
 {
 public:
-  Foo(){}
+  Foo()
+  {}
 
   void initialize(double foo)
   {
@@ -48,5 +52,7 @@ private:
   double foo_;
 
 };
-};
-#endif
+
+};  // namespace test_plugins
+
+#endif  // __pluginlib__test_plugins__h__

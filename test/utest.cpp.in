@@ -1,28 +1,48 @@
 #include <pluginlib/class_loader.h>
-#include "test_base.h"
 #include <gtest/gtest.h>
+
+#include <console_bridge/console.h>
+
+#include "test_base.h"
+
+#define ROS_INFO(message, ...) logInform(message, ## __VA_ARGS__)
+
+class CustomEnvironment
+ : public ::testing::Environment
+{
+public:
+  virtual ~CustomEnvironment()
+  {}
+  virtual void SetUp()
+  {
+    std::string ament_prefix_path = "@PLUGINLIB_TEST_PREFIX_PATH@";
+    // set environment variable
+#ifndef _WIN32
+    int retcode = setenv("AMENT_PREFIX_PATH", ament_prefix_path.c_str(), 1);
+#else
+    errno_t retcode = _putenv_s("AMENT_PREFIX_PATH", ament_prefix_path);
+#endif
+    if (retcode) {
+      throw std::runtime_error("Failed to set environment variable 'AMENT_PREFIX_PATH'");
+    }
+  }
+};
 
 TEST(PluginlibTest, unknownPlugin)
 {
   pluginlib::ClassLoader<test_base::Fubar> test_loader("pluginlib", "test_base::Fubar");
   test_base::Fubar* foo = NULL;
-  
-  try
-  {
-    foo = test_loader.createClassInstance("pluginlib/foobar");
+
+  try {
+    foo = test_loader.createUnmanagedInstance("pluginlib/foobar");
     foo->initialize(10.0);
-  }
-  catch(pluginlib::LibraryLoadException& ex)
-  {
+  } catch (pluginlib::LibraryLoadException & ex) {
     SUCCEED();
     return;
-  }
-  catch(...)
-  {
+  } catch (...) {
     FAIL() << "Uncaught exception";
   }
   ADD_FAILURE() << "Didn't throw exception as expected";
- 
 }
 
 
@@ -30,42 +50,30 @@ TEST(PluginlibTest, misspelledPlugin)
 {
   pluginlib::ClassLoader<test_base::Fubar> bad_test_loader("pluginlib", "test_base::Fuba");
   test_base::Fubar* foo = NULL;
-  
-  try
-  {
-    foo = bad_test_loader.createClassInstance("pluginlib/foo");
+
+  try {
+    foo = bad_test_loader.createUnmanagedInstance("pluginlib/foo");
     foo->initialize(10.0);
-  }
-  catch(pluginlib::LibraryLoadException& ex)
-  {
+  } catch (pluginlib::LibraryLoadException & ex) {
     SUCCEED();
     return;
-  }
-  catch(...)
-  {
+  } catch (...) {
     FAIL() << "Uncaught exception";
   }
   ADD_FAILURE() << "Didn't throw exception as expected";
- 
 }
 
 TEST(PluginlibTest, invalidPackage)
-{  
-  try
-  {
+{
+  try {
     pluginlib::ClassLoader<test_base::Fubar> bad_test_loader("pluginlib_bad", "test_base::Fubar");
-  }
-  catch(pluginlib::LibraryLoadException& ex)
-  {
+  } catch (pluginlib::LibraryLoadException & ex) {
     SUCCEED();
     return;
-  }
-  catch(...)
-  {
+  } catch (...) {
     FAIL() << "Uncaught exception";
   }
   ADD_FAILURE() << "Didn't throw exception as expected";
- 
 }
 
 TEST(PluginlibTest, brokenPlugin)
@@ -73,47 +81,33 @@ TEST(PluginlibTest, brokenPlugin)
   pluginlib::ClassLoader<test_base::Fubar> test_loader("pluginlib", "test_base::Fubar");
   test_base::Fubar* none = NULL;
 
-  try
-  {
-    none = test_loader.createClassInstance("pluginlib/none");
+  try {
+    none = test_loader.createUnmanagedInstance("pluginlib/none");
     none->initialize(10.0);
-  }
-  catch(pluginlib::PluginlibException& ex)
-  {
+  } catch (pluginlib::PluginlibException & ex) {
     SUCCEED();
     return;
-  }
-  catch(class_loader::ClassLoaderException& ex)
-  {
+  } catch (class_loader::ClassLoaderException& ex) {
     FAIL() << "class_loader exception instead of pluginlib, argh. " << ex.what() << "\n";
-  }
-  catch(...)
-  {
+  } catch (...) {
     FAIL() << "Uncaught exception";
   }
   ADD_FAILURE() << "Didn't throw exception as expected";
- 
 }
 
 TEST(PluginlibTest, workingPlugin)
 {
   pluginlib::ClassLoader<test_base::Fubar> test_loader("pluginlib", "test_base::Fubar");
   test_base::Fubar* foo = NULL;
-  
-  try
-  {
-    foo = test_loader.createClassInstance("pluginlib/foo");
+
+  try {
+    foo = test_loader.createUnmanagedInstance("pluginlib/foo");
     foo->initialize(10.0);
     EXPECT_EQ(foo->result(),100.0);
-
-  }
-  catch(pluginlib::PluginlibException& ex)
-  {
+  } catch (pluginlib::PluginlibException & ex) {
     FAIL() << "Throwing exception: " << ex.what();
     return;
-  }
-  catch(...)
-  {
+  } catch (...) {
     FAIL() << "Uncaught exception";
   }
 }
@@ -130,19 +124,15 @@ TEST(PluginlibTest, createUnmanagedInstanceAndUnloadLibrary)
   delete inst;
 
   ROS_INFO( "Checking if plugin is loaded with isClassLoaded..." );
-  if( pl.isClassLoaded( "pluginlib/foo" ) )
+  if( pl.isClassLoaded( "pluginlib/foo" ) ) {
     ROS_INFO( "Class is loaded" );
-  else
-  {
+  } else {
     FAIL() <<  "Library containing class should be loaded but isn't.";
   }
   ROS_INFO( "Trying to unload class with unloadLibraryForClass..." );
-  try
-  {
+  try {
     pl.unloadLibraryForClass("pluginlib/foo");
-  }
-  catch(pluginlib::PluginlibException& e)
-  {
+  } catch (pluginlib::PluginlibException & e) {
     FAIL() << "Could not unload library when I should be able to.";
   }
   ROS_INFO( "Done." );
@@ -155,24 +145,20 @@ TEST(PluginlibTest, createManagedInstanceAndUnloadLibrary)
 
   ROS_INFO( "Instantiating plugin..." );
   {
-    boost::shared_ptr<test_base::Fubar> inst = pl.createInstance("pluginlib/foo");
+    pl.createInstance("pluginlib/foo");
   }
 
   ROS_INFO( "Checking if plugin is loaded with isClassLoaded..." );
-  if( pl.isClassLoaded( "pluginlib/foo" ) )
+  if( pl.isClassLoaded( "pluginlib/foo" ) ) {
     ROS_INFO( "Class is loaded" );
-  else
-  {
+  } else {
     FAIL() <<  "Library containing class should be loaded but isn't.";
   }
-  
+
   ROS_INFO( "Trying to unload class with unloadLibraryForClass..." );
-  try
-  {
+  try {
     pl.unloadLibraryForClass("pluginlib/foo");
-  }
-  catch(pluginlib::PluginlibException& e)
-  {
+  } catch (pluginlib::PluginlibException & e) {
     FAIL() << "Could not unload library when I should be able to.";
   }
   ROS_INFO( "Done." );
@@ -180,8 +166,7 @@ TEST(PluginlibTest, createManagedInstanceAndUnloadLibrary)
 
 // Run all the tests that were declared with TEST()
 int main(int argc, char **argv){
-  testing::InitGoogleTest(&argc, argv);
+  ::testing::AddGlobalTestEnvironment(new CustomEnvironment());
+  ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }
-
-
