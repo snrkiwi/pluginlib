@@ -24,7 +24,7 @@ target_include_directories(plugin_tool PUBLIC
   ${Boost_INCLUDE_DIRS} ${TinyXML_INCLUDE_DIRS})
 target_link_libraries(plugin_tool
   ${ament_index_cpp_LIBRARIES} ${class_loader_LIBRARIES}
-  ${Boost_LIBRARIES} ${TinyXML_LIBRARIES})
+  ${Boost_LIBRARIES} ${TinyXML_LIBRARIES} dl)
 
 if(AMENT_ENABLE_TESTING)
   find_package(ament_cmake_gtest REQUIRED)
@@ -65,6 +65,11 @@ if(AMENT_ENABLE_TESTING)
       ${Boost_LIBRARIES} ${TinyXML_LIBRARIES})
     add_dependencies(${PROJECT_NAME}_utest test_plugins)
   endif()
+
+  install(TARGETS ${PROJECT_NAME}_utest test_plugins
+    ARCHIVE DESTINATION lib
+    LIBRARY DESTINATION lib
+    RUNTIME DESTINATION bin)
 endif()
 
 set(pluginlib_DIR "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
@@ -74,7 +79,7 @@ ament_package(
   CONFIG_EXTRAS "pluginlib-extras.cmake"
 )
 
-install(TARGETS plugin_tool ${PROJECT_NAME}_utest test_plugins
+install(TARGETS plugin_tool
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION bin)
