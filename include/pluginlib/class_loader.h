@@ -34,7 +34,6 @@
 #include <string>
 #include <vector>
 
-#include "boost/algorithm/string.hpp"
 #include "class_loader/multi_library_class_loader.h"
 #include "pluginlib/class_desc.h"
 #include "pluginlib/class_loader_base.h"
@@ -108,7 +107,7 @@ public:
    *   instantiated.
    * @return An instance of the class
    */
-  boost::shared_ptr<T> createInstance(const std::string & lookup_name);
+  std::shared_ptr<T> createInstance(const std::string & lookup_name);
 
 #if __cplusplus >= 201103L
   /// Creates an instance of a desired class.
